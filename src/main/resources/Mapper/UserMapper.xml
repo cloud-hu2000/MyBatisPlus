@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.CloudHu.MyBatisPlus.Mapper.UserMapper">
+    <!--  List<User> getAllUser();  -->
+    <select id="getAllUser" resultType="com.CloudHu.MyBatisPlus.POJO.User">
+        select * from t_user
+    </select>
+
+    <!--int insertUser(User user);-->
+    <insert id="insertUser">
+        insert into t_user
+        values (null, #{userName}, #{password})
+    </insert>
+
+</mapper>
