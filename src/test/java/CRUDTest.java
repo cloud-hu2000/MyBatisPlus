@@ -21,6 +21,9 @@ public class CRUDTest {
         user.setPassword("321123");
         //INSERT INTO user ( id, user_name, password ) VALUES ( ?, ?, ? )
         mapper.insert(user);
+        mapper.insert(user);
+        mapper.insert(user);
+        mapper.insert(user);
     }
 
     @Test

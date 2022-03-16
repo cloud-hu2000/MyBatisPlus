@@ -1,6 +1,9 @@
 import com.CloudHu.MyBatisPlus.Mapper.UserMapper;
 import com.CloudHu.MyBatisPlus.POJO.User;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -98,7 +101,6 @@ public class WrapperTest {
         //查询用户信息的username和password字段
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         UserMapper mapper = ac.getBean(UserMapper.class);
-        //
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.select("user_name", "password");
         //selectMaps()返回Map集合列表，通常配合select()使用，避免User对象中没有被查询到的列值 为null
@@ -109,7 +111,7 @@ public class WrapperTest {
     @Test
     //QueryWrapper实现子查询
     public void test07() {
-        ////查询id小于等于3的用户信息
+        //查询id小于等于3的用户信息
         ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
         UserMapper mapper = ac.getBean(UserMapper.class);
         //
@@ -118,5 +120,70 @@ public class WrapperTest {
         //selectObjs的使用场景：只返回一列
         List<Object> objects = mapper.selectObjs(queryWrapper);
         objects.forEach(item -> System.out.println(item.toString()));
+    }
+
+    @Test
+    //UpdateWrapper
+    public void test08() {
+        //将id为1并且用户名中包含有张的用户信息修改
+
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        UserMapper mapper = ac.getBean(UserMapper.class);
+        //组装set子句以及修改条件
+        UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
+        //lambda表达式内的逻辑优先运算
+        updateWrapper
+                .set("user_name", "UpdateWrapper修改的用户")
+                .set("password", "111111")
+                .like("user_name", "张")
+                .and(i -> i.eq("id", 1));
+        //这里必须要创建User对象，否则无法应用自动填充。如果没有自动填充，可以设置为null
+        //User user = new User();
+        //user.setName("张三");
+        //int result = userMapper.update(user, updateWrapper);
+        //UPDATE t_user SET age=?,email=? WHERE (username LIKE ? AND (age > ? OR email IS NULL))
+        int result = mapper.update(null, updateWrapper);
+        System.out.println(result);
+
+    }
+
+    @Test
+    //condition
+    public void test09() {
+        //定义查询条件，有可能为null（用户未输入或未选择）
+        String username = null;
+        String password = "333";
+
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        UserMapper mapper = ac.getBean(UserMapper.class);
+
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+
+        //StringUtils.isNotBlank判断某字符串是否为空或长度为0或由空白符(whitespace)构成
+        queryWrapper
+                .like(StringUtils.isNotBlank(username),"user_name",username)
+                .like(StringUtils.isNotBlank(password),"password",password);
+        List<User> users = mapper.selectList(queryWrapper);
+        users.forEach(System.out::println);
+    }
+
+    @Test
+    //LambdaQueryWrapper
+    public void test10() {
+        //定义查询条件，有可能为null（用户未输入或未选择）
+        String username = null;
+        String password = "333";
+
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        UserMapper mapper = ac.getBean(UserMapper.class);
+
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+
+        //StringUtils.isNotBlank判断某字符串是否为空或长度为0或由空白符(whitespace)构成
+        queryWrapper
+                .like(StringUtils.isNotBlank(username),User::getUserName,username)
+                .like(StringUtils.isNotBlank(password),User::getPassword,password);
+        List<User> users = mapper.selectList(queryWrapper);
+        users.forEach(System.out::println);
     }
 }

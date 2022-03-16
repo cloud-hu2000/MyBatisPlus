@@ -881,3 +881,286 @@ SELECT id,username AS name,age,email,is_deleted FROM t_user WHERE is_deleted=0
         objects.forEach(item -> System.out.println(item.toString()));
     }
 ```
+
+### 3. UpdateWrapper
+
+Update 条件封装，用于Entity对象更新操作
+
+```
+@Test
+//UpdateWrapper
+public void test08() {
+    //将id为1并且用户名中包含有张的用户信息修改
+
+    ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+    UserMapper mapper = ac.getBean(UserMapper.class);
+    //组装set子句以及修改条件
+    UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
+    //lambda表达式内的逻辑优先运算
+    updateWrapper
+            .set("user_name", "UpdateWrapper修改的用户")
+            .set("password", "111111")
+            .like("user_name", "张")
+            .and(i -> i.eq("id", 1));
+    //这里必须要创建User对象，否则无法应用自动填充。如果没有自动填充，可以设置为null
+    //User user = new User();
+    //user.setName("张三");
+    //int result = userMapper.update(user, updateWrapper);
+    //UPDATE t_user SET age=?,email=? WHERE (username LIKE ? AND (age > ? OR email IS NULL))
+    int result = mapper.update(null, updateWrapper);
+    System.out.println(result);
+
+}
+```
+
+### 4. condition
+
+在真正开发的过程中，组装条件是常见的功能，而这些条件数据来源于用户输入，是可选的，因
+此我们在组装这些条件时，必须先判断用户是否选择了这些条件，若选择则需要组装该条件，若
+没有选择则一定不能组装，以免影响SQL执行的结果
+
+```
+@Test
+//condition
+public void test09() {
+    //定义查询条件，有可能为null（用户未输入或未选择）
+    String username = null;
+    String password = "123";
+
+    ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+    UserMapper mapper = ac.getBean(UserMapper.class);
+
+    QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+
+    //StringUtils.isNotBlank判断某字符串是否为空或长度为0或由空白符(whitespace)构成
+    if (StringUtils.isNotBlank(username)) {
+        queryWrapper.like("user_name", username);
+    }
+    if (StringUtils.isNotBlank(password)) {
+        queryWrapper.like("password", password);
+    }
+
+    List<User> users = mapper.selectList(queryWrapper);
+    users.forEach(System.out::println);
+}
+```
+
+
+上面的实现方案没有问题，但是代码比较复杂，我们可以使用带condition参数的重载方法构建查
+询条件，简化代码的编写
+
+![](readme_img/img_9.png)
+
+```
+@Test
+//condition
+public void test09() {
+    //定义查询条件，有可能为null（用户未输入或未选择）
+    String username = null;
+    String password = "333";
+
+    ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+    UserMapper mapper = ac.getBean(UserMapper.class);
+
+    QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+
+    //StringUtils.isNotBlank判断某字符串是否为空或长度为0或由空白符(whitespace)构成
+    queryWrapper
+            .like(StringUtils.isNotBlank(username),"user_name",username)
+            .like(StringUtils.isNotBlank(password),"password",password);
+    List<User> users = mapper.selectList(queryWrapper);
+    users.forEach(System.out::println);
+}
+```
+
+### 5. LambdaQueryWrapper
+
+避免使用字符串表示字段，防止运行时错误
+
+```
+@Test
+//LambdaQueryWrapper
+public void test10() {
+    //定义查询条件，有可能为null（用户未输入或未选择）
+    String username = null;
+    String password = "333";
+
+    ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+    UserMapper mapper = ac.getBean(UserMapper.class);
+
+    LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+
+    //StringUtils.isNotBlank判断某字符串是否为空或长度为0或由空白符(whitespace)构成
+    queryWrapper
+            .like(StringUtils.isNotBlank(username),User::getUserName,username)
+            .like(StringUtils.isNotBlank(password),User::getPassword,password);
+    List<User> users = mapper.selectList(queryWrapper);
+    users.forEach(System.out::println);
+}
+```
+
+### 6. LambdaUpdateWrapper
+
+和第五点同理
+
+
+## 七、插件
+
+### 1. 分页插件
+
+MyBatis Plus自带分页插件，只要简单的配置即可实现分页功能
+
+#### 1) 添加配置
+
+注意MybatisSqlSessionFactoryBean不用额外添加，在里面增加配置插件的内容即可
+
+```
+    <!-- 此处使用的是MybatisSqlSessionFactoryBean -->
+    <bean class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+        <!-- 设置MyBatis配置文件的路径（可以不设置） -->
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+        <!-- 设置数据源 -->
+        <property name="dataSource" ref="dataSource"></property>
+        <!-- 设置类型别名所对应的包 -->
+        <property name="typeAliasesPackage"
+                  value="com.CloudHu.MyBatisPlus.POJO"></property>
+        <!--配置插件-->
+        <property name="plugins">
+            <array>
+                <ref bean="mybatisPlusInterceptor"></ref>
+            </array>
+        </property>
+        <!--设置映射文件的路径 若映射文件所在路径和mapper接口所在路径一致，则不需要设置 -->
+        <!--<property name="mapperLocations" value="classpath:mapper/*.xml"> </property> -->
+    </bean>
+
+    <!--配置MyBatis-Plus插件-->
+    <bean id="mybatisPlusInterceptor" class="com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor">
+        <property name="interceptors">
+            <list>
+                <ref bean="paginationInnerInterceptor"></ref>
+            </list>
+        </property>
+    </bean>
+
+    <!--配置MyBatis-Plus分页插件的bean-->
+    <bean id="paginationInnerInterceptor"
+          class="com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor">
+        <!--设置数据库类型-->
+        <property name="dbType" value="MYSQL"></property>
+    </bean>
+```
+
+#### 2) 测试
+
+```
+@Test
+public void test01() {
+    ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+    UserMapper mapper = ac.getBean(UserMapper.class);
+    //设置分页参数
+    Page<User> page = new Page<>(1, 5);
+    mapper.selectPage(page, null);
+    //获取分页数据
+    List<User> list = page.getRecords();
+    list.forEach(System.out::println);
+    System.out.println("当前页：" + page.getCurrent());
+    System.out.println("每页显示的条数：" + page.getSize());
+    System.out.println("总记录数：" + page.getTotal());
+    System.out.println("总页数：" + page.getPages());
+    System.out.println("是否有上一页：" + page.hasPrevious());
+    System.out.println("是否有下一页：" + page.hasNext());
+}
+```
+
+### 2. xml自定义分页
+
+#### 1) UserMapper中定义接口方法
+
+```
+IPage<User> selectPageVo(@Param("page") Page<User> page, @Param("username") String username);
+```
+
+#### 2) UserMapper.xml中编写SQL
+
+```
+<!--IPage<User> selectPageVo(@Param("page") Page<User> page, @Param("user_name") String username);-->
+<select id="selectPageVo" resultType="User">
+    SELECT * FROM user WHERE user_name like '${username}%'
+</select>
+```
+
+#### 3) 测试
+
+```
+@Test
+    public void test02() {
+        ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+        UserMapper mapper = ac.getBean(UserMapper.class);
+        //设置分页参数
+        Page<User> page = new Page<>(1, 5);
+        mapper.selectPageVo(page,"李");
+        List<User> list = page.getRecords();
+
+        list.forEach(System.out::println);
+        System.out.println("当前页：" + page.getCurrent());
+        System.out.println("每页显示的条数：" + page.getSize());
+        System.out.println("总记录数：" + page.getTotal());
+        System.out.println("总页数：" + page.getPages());
+        System.out.println("是否有上一页：" + page.hasPrevious());
+        System.out.println("是否有下一页：" + page.hasNext());
+    }
+```
+
+## 八、通用枚举
+
+### 1. 数据库表添加字段sex
+
+### 2. 创建通用枚举类型
+
+```
+package com.CloudHu.MyBatisPlus.Enum;
+
+import com.baomidou.mybatisplus.annotation.EnumValue;
+import lombok.Getter;
+
+@Getter
+public enum SexEnum {
+    MALE(1,"男"),
+    FEMALE(2,"女");
+
+    @EnumValue
+    private Integer sex;
+    private String sexName;
+
+    SexEnum(Integer sex, String sexName) {
+        this.sex = sex;
+        this.sexName = sexName;
+    }
+}
+```
+
+### 3. 配置扫描通用枚举
+
+在MybatisSqlSessionFactoryBean中加入
+```
+<!-- 配置扫描通用枚举 -->
+<property name="typeEnumsPackage" value="com.CloudHu.MyBatisPlus.Enum"></property>
+```
+
+### 4.测试
+
+```
+@Test
+public void testSexEnum() {
+    ApplicationContext ac = new ClassPathXmlApplicationContext("applicationContext.xml");
+    UserMapper mapper = ac.getBean(UserMapper.class);
+
+    User user = new User();
+    user.setUserName("Enum");
+    user.setSex(SexEnum.MALE);
+    // INSERT INTO t_user ( username, age, sex ) VALUES ( ?, ?, ? )
+    // Parameters: Enum(String), 20(Integer), 1(Integer)
+    mapper.insert(user);
+}
+```

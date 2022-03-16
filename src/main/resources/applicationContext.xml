@@ -32,7 +32,35 @@
         <!-- 设置类型别名所对应的包 -->
         <property name="typeAliasesPackage"
                   value="com.CloudHu.MyBatisPlus.POJO"></property>
+        <!--配置插件-->
+        <property name="plugins">
+            <array>
+                <ref bean="mybatisPlusInterceptor"></ref>
+            </array>
+        </property>
+
         <!--设置映射文件的路径 若映射文件所在路径和mapper接口所在路径一致，则不需要设置 -->
-        <!--<property name="mapperLocations" value="classpath:mapper/*.xml"> </property> -->
+        <property name="mapperLocations" value="classpath:Mapper/*.xml"></property>
+
+        <!-- 配置扫描通用枚举 -->
+        <property name="typeEnumsPackage" value="com.CloudHu.MyBatisPlus.Enum"></property>
+
     </bean>
+
+    <!--配置MyBatis-Plus插件-->
+    <bean id="mybatisPlusInterceptor" class="com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor">
+        <property name="interceptors">
+            <list>
+                <ref bean="paginationInnerInterceptor"></ref>
+            </list>
+        </property>
+    </bean>
+
+    <!--配置MyBatis-Plus分页插件的bean-->
+    <bean id="paginationInnerInterceptor"
+          class="com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor">
+        <!--设置数据库类型-->
+        <property name="dbType" value="MYSQL"></property>
+    </bean>
+
 </beans>

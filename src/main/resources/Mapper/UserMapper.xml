@@ -5,7 +5,8 @@
 <mapper namespace="com.CloudHu.MyBatisPlus.Mapper.UserMapper">
     <!--  List<User> getAllUser();  -->
     <select id="getAllUser" resultType="com.CloudHu.MyBatisPlus.POJO.User">
-        select * from t_user
+        select *
+        from t_user
     </select>
 
     <!--int insertUser(User user);-->
@@ -14,4 +15,8 @@
         values (null, #{userName}, #{password})
     </insert>
 
+    <!--IPage<User> selectPageVo(@Param("page") Page<User> page, @Param("user_name") String username);-->
+    <select id="selectPageVo" resultType="User">
+        SELECT * FROM user WHERE user_name like '${username}%'
+    </select>
 </mapper>

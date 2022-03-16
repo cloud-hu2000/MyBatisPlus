@@ -1,5 +1,6 @@
 package com.CloudHu.MyBatisPlus.POJO;
 
+import com.CloudHu.MyBatisPlus.Enum.SexEnum;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -9,6 +10,7 @@ public class User {
     private long id;
     private String userName;
     private String password;
+    private SexEnum sex;
     @TableLogic
     private Integer isDeleted;
 
@@ -52,6 +54,14 @@ public class User {
 
     public void setIsDeleted(Integer isDeleted) {
         this.isDeleted = isDeleted;
+    }
+
+    public SexEnum getSex() {
+        return sex;
+    }
+
+    public void setSex(SexEnum sex) {
+        this.sex = sex;
     }
 
     @Override
