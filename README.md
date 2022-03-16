@@ -861,8 +861,8 @@ SELECT id,username AS name,age,email,is_deleted FROM t_user WHERE is_deleted=0
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.select("user_name", "password");
         //selectMaps()返回Map集合列表，通常配合select()使用，避免User对象中没有被查询到的列值 为null
-        List<Map<String, Object>> Maps = mapper.selectMaps(queryWrapper);
-        Maps.forEach(System.out::println);
+        List<Map<String, Object>> maps = mapper.selectMaps(queryWrapper);
+        maps.forEach(System.out::println);
     }
    ```
 1. 实现子查询
